@@ -1,5 +1,7 @@
 using StructLH
-using Test
+using Random, Test
+
+include("merge_test.jl");
 
 struct RTP2
     r1
@@ -62,6 +64,8 @@ end
         oOut2 = reduce_object_vector(objV, string_sum, fieldTypes = [String]);
         @test oOut2.z == "abc"
     end
+
+    merge_object_arrays_test()
 end
 
 # ---------------
