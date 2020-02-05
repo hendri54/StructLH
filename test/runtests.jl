@@ -3,6 +3,8 @@ using Random, Test
 
 include("merge_test.jl");
 
+
+# Construct ROV object with child objects
 struct RTP2
     r1
     r2
@@ -49,6 +51,13 @@ end
         @test isnothing(r3)
         r4 = retrieve_property(z, :x);
         @test isa(r4, RTP2)
+
+        r2a = retrieve_child_property(z, :x, :r2);
+        @test r2a == x.r2
+        r2b = retrieve_child_property(z, :y, :r2);
+        @test r2b == y.r2
+        # Try an object that is in a different child
+        @test isnothing(retrieve_child_property(z, :x, :r4))
     end
 
     @testset "Reduce object vector" begin
