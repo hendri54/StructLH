@@ -1,3 +1,11 @@
-# StructLH
+# StructLH Documentation
 
-*Documentation goes here.*
+```@meta
+CurrentModule = StructLH
+```
+
+```@autodocs
+Modules = [StructLH]
+```
+
+------------

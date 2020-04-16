@@ -62,58 +62,69 @@ Given a vector of mutable structs, compute a function of all numeric fields.
 
 Example use case: Compute the mean and standard deviation of simulated model statistics.
 
-`reduceFct` takes a vector of numeric inputs and returns a single numeric output that is of compatible size and type so it can be written back into an instance of the objects contained in `oVecV`
+`reduceFct` takes a vector of numeric inputs and returns a single numeric output that is of compatible size and type so it can be written back into an instance of the objects contained in `oVecV`.
+
+To handle `Nan` or `missing`, make sure that `reduceFct` appropriately handles or skips them.
 
 Optional input `fieldTypes` indicates which non-numeric field types to use as well.
+
+Limitation: Because the output object is of the same type as the input objects in `oVecV`, it is not possible to apply `reduceFct` that returns a different type from its inputs. For example, `mean` of integers does not work.
 """
 function reduce_object_vector(oVecV :: Vector{T1},  reduceFct :: Function;
     fieldTypes :: Vector = []) where T1
+
     # Allocate output object
     oOut = deepcopy(oVecV[1]);
-    n = length(oVecV);
-
     # Loop over numeric fields
     pnV = propertynames(oOut);
     for pn in pnV
-        fieldM = getfield(oVecV[1], pn);
-        fType = typeof(fieldM);
-
-        if fType <: AbstractFloat
-            # Scalar field
-            if hasmethod(reduceFct, (Vector{fType},))
-                xM = reduceFct([getfield(oVecV[iObj], pn) for iObj = 1 : n]);
-                @assert typeof(xM) == fType
-                setfield!(oOut, pn, xM);
-            end
-
-        elseif isa(fieldM, Array)  &&  (eltype(fieldM) <: AbstractFloat)
-            # Array field
-            if hasmethod(reduceFct, (Vector{eltype(fieldM)},))
-                xM = similar(fieldM);
-                # Loop over elements in the field
-                for j = 1 : length(xM)
-                    xM[j] = reduceFct([getfield(oVecV[iObj], pn)[j] for iObj = 1 : n]);
-                end
-                @assert typeof(xM) == fType
-                @assert size(xM) == size(fieldM)  "Size mismatch: $(size(xM)) vs $(size(fieldM))"
-                setfield!(oOut, pn, xM);
-            end
-
-        elseif fType ∈ fieldTypes
-            # Try to call `reduceFct` on vector of fields
-            @assert hasmethod(reduceFct, (Vector{fType},))
-            xM = reduceFct([getfield(oVecV[iObj], pn) for iObj = 1 : n]);
-            # Result can only be used if the resulting object matches `fieldM`
-            @argcheck (typeof(xM) == fType)
-            if hasmethod(size, (fType,))
-                @argcheck (size(xM) == size(fieldM))
-            end
+        xM = reduce_one_field(oVecV, pn, reduceFct; fieldTypes = fieldTypes);
+        if !isnothing(xM)
             setfield!(oOut, pn, xM);
         end
     end
-
     return oOut
 end
+
+
+# Apply `reduceFct` to one field in a vector of objects.
+# Returns `nothing` if reduction not possible.
+function reduce_one_field(oVecV :: Vector{T1},  pn,  reduceFct :: Function;
+    fieldTypes :: Vector = []) where T1
+
+    n = length(oVecV);
+    fieldM = getfield(oVecV[1], pn);
+    fType = typeof(fieldM);
+    xM = nothing;
+
+    if (fType <: AbstractFloat)  ||  (fType ∈ fieldTypes)
+        # Scalar field
+        if hasmethod(reduceFct, (Vector{fType},))
+            xM = reduceFct([getfield(oVecV[iObj], pn) for iObj = 1 : n]);
+        end
+
+    elseif isa(fieldM, Array)  &&  (eltype(fieldM) <: AbstractFloat)
+        # Array field
+        if hasmethod(reduceFct, (Vector{eltype(fieldM)},))
+            xM = similar(fieldM);
+            # Loop over elements in the field
+            for j = 1 : length(xM)
+                xM[j] = reduceFct([getfield(oVecV[iObj], pn)[j] for iObj = 1 : n]);
+            end
+            @assert size(xM) == size(fieldM)  "Size mismatch: $(size(xM)) vs $(size(fieldM))"
+        end
+    end
+
+    if !isnothing(xM)
+        # Result can only be used if the resulting object matches `fieldM`
+        @argcheck (typeof(xM) == fType)
+        if hasmethod(size, (fType,))
+            @argcheck (size(xM) == size(fieldM))
+        end
+    end
+    return xM
+end
+
 
 
 """
@@ -139,16 +150,23 @@ function merge_object_arrays!(oSource, oTg, idxV,
             if isdefined(oTg, name)
                 xTg = getfield(oTg, name);
                 if dbg
-                    @assert size(xSrc)[1] == length(idxV)
+                    @assert size(xSrc, 1) == length(idxV)
                     @assert size(xSrc)[2:end] == size(xTg)[2:end] "Size mismatch: $(size(xSrc)) vs $(size(xTg))"
                 end
-                # For multidimensional arrays (we don't know the dimensions!)
-                # we need to loop over "rows"
-                for (i1, idx) in enumerate(idxV)
-                    # This selects target "row" `idx`
-                    tgView = selectdim(xTg, 1, idx);
-                    # Copy source "row" `i1` into target row (in place, hence [:])
-                    tgView[:] = selectdim(xSrc, 1, i1);
+                # The n-dim array code also works for Vectors, but is less efficient.
+                if isa(xSrc, Vector)
+                    xTg[idxV] .= xSrc;
+                elseif isa(xSrc, Matrix)
+                    xTg[idxV, :] .= xSrc;
+                else
+                    # For multidimensional arrays (we don't know the dimensions!)
+                    # we need to loop over "rows". This is expensive.
+                    for (i1, idx) in enumerate(idxV)
+                        # This selects target "row" `idx`
+                        tgView = selectdim(xTg, 1, idx);
+                        # Copy source "row" `i1` into target row (in place, hence [:])
+                        tgView[:] = selectdim(xSrc, 1, i1);
+                    end
                 end
             elseif !skipMissingFields
                 error("Missing field $name in target object")
