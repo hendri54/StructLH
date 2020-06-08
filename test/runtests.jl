@@ -1,7 +1,6 @@
 using StructLH
 using Random, Test
 
-include("merge_test.jl");
 
 
 # Construct ROV object with child objects
@@ -35,7 +34,7 @@ function string_sum(sV :: Vector{String})
 end
 
 
-@testset "StructLH" begin
+function retrieve_test()
     @testset "Retrieve property" begin
         x = RTP2(1, 2);
         y = RTP3(4, 5);
@@ -59,7 +58,9 @@ end
         # Try an object that is in a different child
         @test isnothing(retrieve_child_property(z, :x, :r4))
     end
+end
 
+function reduce_ov_test()
     @testset "Reduce object vector" begin
         rov1 = ROV(rand(3,2), 1.23, "a");
         rov2 = ROV(rand(3,2), 3.2, "b");
@@ -73,8 +74,14 @@ end
         oOut2 = reduce_object_vector(objV, string_sum, fieldTypes = [String]);
         @test oOut2.z == "abc"
     end
+end
 
-    merge_object_arrays_test()
+
+@testset "All" begin
+    retrieve_test()
+    reduce_ov_test()
+    include("merge_test.jl");
+    include("apply_fct_test.jl")
 end
 
 # ---------------

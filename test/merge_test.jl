@@ -35,3 +35,8 @@ function merge_object_arrays_test()
     end
 end
 
+@testset "Merge" begin
+    merge_object_arrays_test()
+end
+
+# -------------
