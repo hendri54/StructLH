@@ -77,9 +77,37 @@ function reduce_ov_test()
 end
 
 
+struct STD1
+    x
+end
+
+struct STD2
+    x
+    y
+end
+
+function struct2dict_test()
+    @test isequal(struct2dict(1.2), NodeInfo(Float64, nothing, 1.2))
+    @test isequal(struct2dict([1, 2]), NodeInfo(Array{Int64, 1}, (2,), [1, 2]))
+
+    @test isequal(struct2dict("abc"), NodeInfo(String, nothing, "abc"))
+    @test isequal(struct2dict(["abc", "def"]),  
+        NodeInfo(Array{String,1}, (2,), ["abc", "def"]))
+
+    @test isequal(struct2dict(STD1([1, 2])),
+        Dict{Symbol, Any}([:x => NodeInfo(Array{Int64,1}, (2,), [1, 2])]))
+    
+    s1 = STD2(1.2, STD1([1,2]));
+    d1 = struct2dict(s1);
+    @test isequal(d1[:x], NodeInfo(Float64, nothing, 1.2))
+    @test isequal(d1[:y], struct2dict(STD1([1,2])))
+end
+
+
 @testset "All" begin
     retrieve_test()
     reduce_ov_test()
+    struct2dict_test()
     include("merge_test.jl");
     include("apply_fct_test.jl")
 end

@@ -1,11 +1,18 @@
 # StructLH Documentation
 
-```@meta
-CurrentModule = StructLH
+Code for manipulating `struct`s.
+
+## Merging objects
+
+```@doc
+merge_object_arrays!
 ```
 
-```@autodocs
-Modules = [StructLH]
+## Converting to `Dict`s
+
+```@doc
+NodeInfo
+struct2dict
 ```
 
 ------------

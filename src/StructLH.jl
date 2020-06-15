@@ -6,9 +6,11 @@ export retrieve_property, has_property, retrieve_child_property
 export merge_object_arrays!, reduce_object_vector
 export apply_fct_to_object, obj_name, obj_type, fct_value, children
 export describe, describe_object, show_description
+export NodeInfo, struct2dict
 
 include("retrieve.jl")
 include("reduce.jl");
+include("struct2dict.jl")
 include("traverse_object.jl")
 
 """
