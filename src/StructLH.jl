@@ -2,12 +2,14 @@ module StructLH
 
 using ArgCheck, DocStringExtensions
 
+export @common_fields
 export retrieve_property, has_property, retrieve_child_property
 export merge_object_arrays!, reduce_object_vector
-export apply_fct_to_object, obj_name, obj_type, fct_value, children
+export ApplyFctResult, apply_fct_to_object, obj_name, obj_type, fct_value, children
 export describe, describe_object, show_description
-export NodeInfo, struct2dict
+export NodeInfo, struct2dict, dict2struct!
 
+include("helpers.jl");
 include("retrieve.jl")
 include("reduce.jl");
 include("struct2dict.jl")

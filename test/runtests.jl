@@ -77,30 +77,41 @@ function reduce_ov_test()
 end
 
 
-struct STD1
+mutable struct STD1
     x
 end
 
-struct STD2
+mutable struct STD2
     x
     y
 end
 
-function struct2dict_test()
-    @test isequal(struct2dict(1.2), NodeInfo(Float64, nothing, 1.2))
-    @test isequal(struct2dict([1, 2]), NodeInfo(Array{Int64, 1}, (2,), [1, 2]))
+Base.isequal(s1 :: STD1, s2 :: STD1) = isequal(s1.x, s2.x);
+Base.isequal(s1 :: STD2, s2 :: STD2) = 
+    isequal(s1.x, s2.x)  &&  isequal(s1.y, s2.y);
 
-    @test isequal(struct2dict("abc"), NodeInfo(String, nothing, "abc"))
+function struct2dict_test()
+    @test isequal(struct2dict(1.2), NodeInfo(1.2))
+    @test isequal(struct2dict([1, 2]), NodeInfo{Array{Int64, 1}}((2,), [1, 2]))
+
+    @test isequal(struct2dict("abc"), NodeInfo("abc"))
     @test isequal(struct2dict(["abc", "def"]),  
-        NodeInfo(Array{String,1}, (2,), ["abc", "def"]))
+        NodeInfo{Array{String,1}}((2,), ["abc", "def"]))
 
     @test isequal(struct2dict(STD1([1, 2])),
-        Dict{Symbol, Any}([:x => NodeInfo(Array{Int64,1}, (2,), [1, 2])]))
+        Dict{Symbol, Any}([:x => NodeInfo{Array{Int64,1}}((2,), [1, 2])]))
     
     s1 = STD2(1.2, STD1([1,2]));
     d1 = struct2dict(s1);
-    @test isequal(d1[:x], NodeInfo(Float64, nothing, 1.2))
+    @test isequal(d1[:x], NodeInfo(1.2))
     @test isequal(d1[:y], struct2dict(STD1([1,2])))
+
+    s11 = STD2(0.0, STD1([1]));
+    dict2struct!(s11, d1);
+    @test isequal(s11.x, s1.x)
+    @test isequal(s11, s1)
+    d11 = struct2dict(s11);
+    @test isequal(d1, d11)
 end
 
 
@@ -110,6 +121,7 @@ end
     struct2dict_test()
     include("merge_test.jl");
     include("apply_fct_test.jl")
+    include("helpers_test.jl");
 end
 
 # ---------------
