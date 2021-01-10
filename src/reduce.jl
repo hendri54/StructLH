@@ -44,6 +44,7 @@ function reduce_one_field(oVecV :: Vector{T1},  pn,  reduceFct :: Function;
 
     n = length(oVecV);
     # Use getproperty instead of getfield (b/c getproperty can be overloaded)
+    # @assert hasproperty(oVecV[1], pn)  "$(oVecV[1]) does not have property $pn"
     fieldM = getproperty(oVecV[1], pn);
     fType = typeof(fieldM);
     xM = nothing;
@@ -54,7 +55,7 @@ function reduce_one_field(oVecV :: Vector{T1},  pn,  reduceFct :: Function;
             xM = reduceFct([getproperty(oVecV[iObj], pn) for iObj = 1 : n]);
         end
 
-    elseif isa(fieldM, Array)  &&  (eltype(fieldM) <: AbstractFloat)
+    elseif isa(fieldM, AbstractArray)  &&  (eltype(fieldM) <: AbstractFloat)
         # Array field
         if hasmethod(reduceFct, (Vector{eltype(fieldM)},))
             xM = similar(fieldM);
