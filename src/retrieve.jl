@@ -6,7 +6,7 @@ If the property is not unique, returns the first match and then stops.
 Returns `nothing` if not found.
 """
 function retrieve_property(o, pName :: Symbol)
-    if isdefined(o, pName)
+    if hasproperty(o, pName)
         outVal = getproperty(o, pName);
     else
         outVal = nothing;

@@ -2,6 +2,8 @@
 	$(SIGNATURES)
 
 Object that holds result from traversing an object and applying a function to each property.
+
+Contains the name of the object (typically the field name in the parent object), its `DataType`, the returned function value. Also contains a `Vector{ApplyFctResult}` that holds the same information for each child object.
 """
 mutable struct ApplyFctResult
     name :: Symbol
@@ -54,7 +56,7 @@ Base.show(io :: IO, a :: ApplyFctResult) =
 """
 	$(SIGNATURES)
 
-Function returns false when parsing object tree should stop at this object.
+Function returns false when parsing object tree should stop at this object. Predefined as `false` for common "built-in" types, such as `Number`, `Symbol`, `Array`.
 """
 continue_parsing(x) = true;
 continue_parsing(::Number) = false;
@@ -69,11 +71,7 @@ continue_parsing(::AbstractArray) = false;
 
 Apply function `f` to all properties of an object and its children.
 Stop parsing child objects if `continue_parsing(x) == false`.
-Return tuple with
-- name of object
-- type of object
-- return value of `f`
-- entries for children
+Returns an `ApplyFctResult` object.
 
 Beware: Some functions, such as `sum`, have fallback methods that apply to `Any`. That leads to crashes.
 """
@@ -130,6 +128,8 @@ end
 	$(SIGNATURES)
 
 Returns a description for an object. `Nothing` is the default.
+
+Define this for user defined types to return a `Vector{String}` or `Matrix{String}` that can be formatted as a table. [`desribe_object`](@ref) also shows descriptions of child objects.
 """
 describe(x) = nothing;
 
@@ -137,7 +137,7 @@ describe(x) = nothing;
 """
 	$(SIGNATURES)
 
-Write object description to IO.
+Write object description, including child objects, to IO.
 """
 function show_description(io :: IO, x)
     [println(io, line)  for line in describe_object(x)];
@@ -153,7 +153,7 @@ show_description(x) = show_description(stdout, x);
 Describe an object and its children. Recursively calls `describe` and returns a vector of strings.
 
 The default return value for `describe` is nothing. Then the object is not displayed.
-Otherwise, the return is passed through `format_describe` for formatting.
+Otherwise, the return is passed through `format_describe` for formatting. The result is an indented list which visualizes the structure of parent-child relationships as well.
 """
 function describe_object(x)
     xResult = apply_fct_to_object(x, :Top, describe);

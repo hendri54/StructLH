@@ -30,13 +30,13 @@ If target does not have corresponding field: behavior is governed by `skipMissin
 function merge_object_arrays!(oSource, oTg, idxV,
     skipMissingFields :: Bool; dbg :: Bool = false)
 
-    nameV = fieldnames(typeof(oSource));
+    nameV = propertynames(oSource);
     for name in nameV
-        xSrc = getfield(oSource, name);
+        xSrc = getproperty(oSource, name);
         if isa(xSrc,  Array)
             # Does target have this field?
-            if isdefined(oTg, name)
-                xTg = getfield(oTg, name);
+            if hasproperty(oTg, name)
+                xTg = getproperty(oTg, name);
                 if dbg
                     @assert size(xSrc, 1) == length(idxV)
                     @assert size(xSrc)[2:end] == size(xTg)[2:end] "Size mismatch: $(size(xSrc)) vs $(size(xTg))"
