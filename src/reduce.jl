@@ -39,6 +39,7 @@ end
 
 # Apply `reduceFct` to one field in a vector of objects.
 # Returns `nothing` if reduction not possible.
+# Change: call `reduce_scalar_vector` and `reduce_array_vector` +++++
 function reduce_one_field(oVecV :: Vector{T1},  pn,  reduceFct :: Function;
     fieldTypes :: Vector = []) where T1
 
@@ -49,30 +50,105 @@ function reduce_one_field(oVecV :: Vector{T1},  pn,  reduceFct :: Function;
     fType = typeof(fieldM);
     xM = nothing;
 
-    if (fType <: AbstractFloat)  ||  (fType ∈ fieldTypes)
-        # Scalar field
-        if hasmethod(reduceFct, (Vector{fType},))
-            xM = reduceFct([getproperty(oVecV[iObj], pn) for iObj = 1 : n]);
-        end
-
-    elseif isa(fieldM, AbstractArray)  &&  (eltype(fieldM) <: AbstractFloat)
-        # Array field
-        if hasmethod(reduceFct, (Vector{eltype(fieldM)},))
-            xM = similar(fieldM);
-            # Loop over elements in the field
-            for j = 1 : length(xM)
-                xM[j] = reduceFct([getproperty(oVecV[iObj], pn)[j] for iObj = 1 : n]);
-            end
-            @assert size(xM) == size(fieldM)  "Size mismatch: $(size(xM)) vs $(size(fieldM))"
-        end
+    fieldV = [getproperty(oVecV[iObj], pn)  for iObj = 1 : n];
+    if isa(fieldV[1], AbstractArray)
+        xM = reduce_array_vector(fieldV, reduceFct);
+    else
+        xM = reduce_scalar_vector(fieldV, reduceFct);
     end
+    return xM
 
-    if !isnothing(xM)
-        # Result can only be used if the resulting object matches `fieldM`
-        @argcheck (typeof(xM) == fType)
-        if hasmethod(size, (fType,))
-            @argcheck (size(xM) == size(fieldM))
+
+    # if (fType <: AbstractFloat)  ||  (fType ∈ fieldTypes)
+    #     # Scalar field
+    #     if hasmethod(reduceFct, (Vector{fType},))
+    #         xM = reduceFct([getproperty(oVecV[iObj], pn) for iObj = 1 : n]);
+    #     end
+
+    # elseif isa(fieldM, AbstractArray)  &&  (eltype(fieldM) <: AbstractFloat)
+    #     # Array field
+    #     if hasmethod(reduceFct, (Vector{eltype(fieldM)},))
+    #         xM = similar(fieldM);
+    #         # Loop over elements in the field
+    #         for j = 1 : length(xM)
+    #             xM[j] = reduceFct([getproperty(oVecV[iObj], pn)[j] for iObj = 1 : n]);
+    #         end
+    #         @assert size(xM) == size(fieldM)  "Size mismatch: $(size(xM)) vs $(size(fieldM))"
+    #     end
+    # end
+
+    # if !isnothing(xM)
+    #     # Result can only be used if the resulting object matches `fieldM`
+    #     @argcheck (typeof(xM) == fType)
+    #     if hasmethod(size, (fType,))
+    #         @argcheck (size(xM) == size(fieldM))
+    #     end
+    # end
+    # return xM
+end
+
+
+"""
+	$(SIGNATURES)
+
+Reduce a `Vector{Array}` element by element. `reduceFct` is applied to the vector of `x[j]` for each index `j` where all the `x` from `fieldV` are stacked into a vector.
+
+If `reduceFct` returns a different type, nothing is assigned. For example, the mean of `Int` values is not assigned.
+"""
+function reduce_array_vector(fieldV :: AbstractVector{Array{F1, N}}, 
+    reduceFct) where {F1, N}
+
+    n = length(fieldV);
+    fType = typeof(fieldV[1]);
+
+    # Array field
+    if hasmethod(reduceFct, (Vector{eltype(fType)},))
+        for iObj = 1 : n
+            @argcheck size(fieldV[iObj]) == size(fieldV[1])
         end
+
+        # Loop over elements in the field
+        xM = similar(fieldV[1]);
+        for j = eachindex(xM)
+            # Reduce element by element
+            valueV = [fieldV[iObj][j] for iObj = 1 : n];
+            xr = reduceFct(valueV);
+            if xr isa eltype(xM)
+                xM[j] = xr;
+            else
+                xM = nothing;
+                break;
+            end
+        end
+    else
+        xM = nothing;
+    end
+    if !isnothing(xM)
+        @argcheck size(xM) == size(fieldV[1])  
+        @argcheck (typeof(xM) == fType)
+    end
+    return xM
+end
+
+
+"""
+	$(SIGNATURES)
+
+Reduce a vector of "scalars" so that `reduceFct(fieldV)` is called directly.
+
+If `reduceFct` returns a different type, nothing is assigned.
+"""
+function reduce_scalar_vector(fieldV :: AbstractVector{F1}, reduceFct) where F1
+    fType = typeof(fieldV[1]);
+    if hasmethod(reduceFct, (Vector{fType},))
+        xr = reduceFct(fieldV);
+        if xr isa fType
+            xM = xr;
+        else
+            xM = nothing;
+        end
+    else
+        xM = nothing;
     end
     return xM
 end

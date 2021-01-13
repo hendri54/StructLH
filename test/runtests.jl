@@ -33,6 +33,11 @@ function string_sum(sV :: Vector{String})
     return outStr
 end
 
+# Because `hasmethod(sum, Tuple{Vector{Any}})== true`, but `sum(["a", "b"])` errors, we cannot use sum for the test
+function float_sum(sV :: Vector{F1}) where F1 <: Real
+    return sum(sV);
+end
+
 
 function retrieve_test()
     @testset "Retrieve property" begin
@@ -66,7 +71,7 @@ function reduce_ov_test()
         rov2 = ROV(rand(3,2), 3.2, "b");
         rov3 = ROV(rand(3,2), 0.6, "c");
         objV = [rov1, rov2, rov3];
-        oOut = reduce_object_vector(objV, sum);
+        oOut = reduce_object_vector(objV, float_sum);
 
         @test oOut.y ≈ rov1.y .+ rov2.y .+ rov3.y
         @test oOut.x ≈ rov1.x .+ rov2.x .+ rov3.x
@@ -120,7 +125,8 @@ end
     reduce_ov_test()
     struct2dict_test()
     include("merge_test.jl");
-    include("apply_fct_test.jl")
+    include("apply_fct_test.jl");
+    include("reduce_test.jl");
     include("helpers_test.jl");
 end
 
