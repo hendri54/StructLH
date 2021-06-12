@@ -39,7 +39,6 @@ end
 
 # Apply `reduceFct` to one field in a vector of objects.
 # Returns `nothing` if reduction not possible.
-# Change: call `reduce_scalar_vector` and `reduce_array_vector` +++++
 function reduce_one_field(oVecV :: Vector{T1},  pn,  reduceFct :: Function;
     fieldTypes :: Vector = []) where T1
 
