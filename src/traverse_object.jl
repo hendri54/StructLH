@@ -64,7 +64,7 @@ continue_parsing(::Symbol) = false;
 continue_parsing(::AbstractDict) = false;
 continue_parsing(::AbstractString) = false;
 continue_parsing(::AbstractArray) = false;
-
+continue_parsing(::DataType) = false;
 
 """
 	$(SIGNATURES)
@@ -74,10 +74,13 @@ Stop parsing child objects if `continue_parsing(x) == false`.
 Returns an `ApplyFctResult` object.
 
 Beware: Some functions, such as `sum`, have fallback methods that apply to `Any`. That leads to crashes.
+
+Argument `maxLevels` limits the number of recursions and avoids stack overflow if something goes wrong.
 """
-function apply_fct_to_object(x, xName :: Symbol, f :: Function)
+function apply_fct_to_object(x, xName :: Symbol, f :: Function;
+    maxLevels = 5)
     if continue_parsing(x)
-        childV = apply_fct_to_children(x, f);
+        childV = apply_fct_to_children(x, f; maxLevels = (maxLevels - 1));
     else
         childV = nothing;
     end
@@ -92,7 +95,10 @@ end
 
 # Returns a vector of entries, skipping those with `f(x) == nothing` and no children with entries.
 # Returns `nothing` for an object without useful info.
-function apply_fct_to_children(x, f)
+function apply_fct_to_children(x, f; maxLevels = 5)
+    if maxLevels < 1
+        return nothing
+    end
     nameV = propertynames(x);
     if isempty(nameV)
         return nothing
@@ -101,7 +107,8 @@ function apply_fct_to_children(x, f)
     for cName in nameV
         child = getproperty(x, cName);
         if continue_parsing(child)
-            grandChildV = apply_fct_to_children(child, f);
+            grandChildV = apply_fct_to_children(child, f; 
+                maxLevels = (maxLevels - 1));
         else
             grandChildV = nothing;
         end

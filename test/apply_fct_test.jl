@@ -41,12 +41,14 @@ function apply_fct_test()
 end
 
 function describe_test()
-    x = make_test_af_object();
-    outV = describe_object(x)
-    @test isa(outV, Vector{String})
-    @test length(outV) > 5
-    for j = 1 : length(outV)
-        println(outV[j])
+    @testset "Describe object" begin
+        x = make_test_af_object();
+        outV = describe_object(x)
+        @test isa(outV, Vector{String})
+        @test length(outV) > 5
+        for j = 1 : length(outV)
+            println(outV[j])
+        end
     end
 end
 
