@@ -32,13 +32,12 @@ If target does not have corresponding field: behavior is governed by `skipMissin
 function merge_object_arrays!(oSource, oTg, idxV,
     skipMissingFields :: Bool; dbg :: Bool = false)
 
-    nameV = propertynames(oSource);
-    for name in nameV
-        xSrc = getproperty(oSource, name);
+    for propName in propertynames(oSource)
+        xSrc = getproperty(oSource, propName);
         if isa(xSrc,  Array)
             # Does target have this field?
-            if hasproperty(oTg, name)
-                xTg = getproperty(oTg, name);
+            if hasproperty(oTg, propName)
+                xTg = getproperty(oTg, propName);
                 if dbg
                     @assert size(xSrc, 1) == length(idxV)
                     @assert size(xSrc)[2:end] == size(xTg)[2:end] "Size mismatch: $(size(xSrc)) vs $(size(xTg))"
@@ -59,7 +58,7 @@ function merge_object_arrays!(oSource, oTg, idxV,
                     end
                 end
             elseif !skipMissingFields
-                error("Missing field $name in target object")
+                error("Missing field $propName in target object")
             end
         end
     end
