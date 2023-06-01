@@ -1,18 +1,17 @@
 name = "StructLH"
 uuid = "10801879-faf9-5fee-b4da-d4f48ef6194b"
 authors = ["hendri54 <hendricksl@protonmail.com>"]
-version = "1.0"
+version = "1.1"
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-FilesLH = "69233b93-b644-4f5d-9b2e-8880c8b19068"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 ArgCheck = "2"
-DocStringExtensions = "0.8"
+DocStringExtensions = "0.8, 0.9"
 Documenter = "0.27"
 julia = "^1"
 
